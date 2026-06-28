@@ -64,7 +64,6 @@ def s3_scanner():
 
         #checking bucket's version
         versioning_status=s3_client.get_bucket_versioning(Bucket=bucket_name).get('Status')
-        print(versioning_status)
         if versioning_status!="Enabled":
             finding= {
             "rule_id": "CG-S3-003",
@@ -75,10 +74,37 @@ def s3_scanner():
             "recommendation": "Enable versioning to protect against accidental deletion and ransomware."
             }
             findings.append(finding)
-
-
-
-
+        
+        #to check if s3 bucket logging is enabled or not
+        s3_logging=s3_client.get_bucket_logging(Bucket=bucket_name)
+        if not s3_logging.get("LoggingEnabled"):
+            finding={
+            "rule_id": "CG-S3-004",
+            "service": "S3",
+            "resource": bucket_name,
+            "severity": "LOW",
+            "finding":"Bucket access logging is disabled.",
+            "recommendation": "Enable server access logging to improve auditing and forensic capabilities."
+            }
+            findings.append(finding)
+        
+        #to check if bucket has tagging or not
+        try:
+            s3_tagging=s3_client.get_bucket_tagging(Bucket=bucket_name)
+        except ClientError as e:
+            error=e.response["Error"]["Code"]
+            if(error=="NoSuchTagSet"):
+                finding={
+                    "rule_id": "CG-S3-005",
+                    "service": "S3",
+                    "resource": bucket_name,
+                    "severity": "LOW",
+                    "finding":"Bucket has no tags",
+                    "recommendation": "Add tags such as Owner, Environment, and Project for better governance."
+                    }
+                findings.append(finding)
+            else:
+                print(f"Error Occured: {error}")
 
     if not findings:
         print ("no vulnerability found")
