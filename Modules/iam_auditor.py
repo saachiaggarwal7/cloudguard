@@ -1,8 +1,8 @@
 import boto3
 from datetime import datetime,timezone
-def scan_iam_users():
+def scan_iam_users(session):
     iam_findings=[]
-    iam_client=boto3.client('iam')
+    iam_client=session.client('iam')
     iam_list=iam_client.list_users()
 
     #to check whether root has MFA enabled or not
@@ -11,6 +11,7 @@ def scan_iam_users():
         finding={
             "rule_id": "CG-IAM-001",
             "service":"IAM",
+            'region':"Global",
             'resource':"AWS ROOT Account",
             "severity":"CRITICAL",
             "finding":"MFA is disabled in root account",
@@ -26,6 +27,7 @@ def scan_iam_users():
             finding={
             "rule_id": "CG-IAM-002",
             "service":"IAM",
+            'region':"Global",
             'resource':user["UserName"],
             "severity":"HIGH",
             "finding":"MFA is disabled",
@@ -42,10 +44,11 @@ def scan_iam_users():
                 finding={
                 "rule_id": "CG-IAM-003",
                 "service":"IAM",
+                'region':"Global",
                 'resource':user["UserName"],
                 "severity":"MEDIUM",
                 "finding":f"AdministratorAccess policy is directly attached to the user- {user['UserName']}",
-                "recommendation":"Review whether full administrator privileges are required.\nFollow the principle of least privilege."
+                "recommendation":"Review whether full administrator privileges are required. Follow the principle of least privilege."
                 }
                 iam_findings.append(finding)
         
@@ -55,6 +58,7 @@ def scan_iam_users():
                 finding={
                 "rule_id": "CG-IAM-005",
                 "service":"IAM",
+                'region':"Global",
                 'resource':user["UserName"],
                 "severity":"LOW",
                 "finding":f"One or more Inline IAM policies are attached to the user- {user['UserName']} ",
@@ -74,10 +78,11 @@ def scan_iam_users():
                     finding={
                             "rule_id": "CG-IAM-004",
                             "service":"IAM",
+                            'region':"Global",
                             'resource':user["UserName"],
                             "severity":"MEDIUM",
                             "finding":f"AdministratorAccess policy is inherited via {group_name} ",
-                            "recommendation":"Review whether full administrator privileges are required.\nFollow the principle of least privilege."
+                            "recommendation":"Review whether full administrator privileges are required. Follow the principle of least privilege."
                         }
                     iam_findings.append(finding)
              
@@ -87,6 +92,7 @@ def scan_iam_users():
                 finding={
                             "rule_id": "CG-IAM-006",
                             "service":"IAM",
+                            'region':"Global",
                             'resource':user["UserName"],
                             "severity":"LOW",
                             "finding":f"Inline policy is inherited via {group_name}",
@@ -106,6 +112,7 @@ def scan_iam_users():
                     finding={
                 "rule_id": "CG-IAM-007",
                 "service":"IAM",
+                'region':"Global",
                 'resource':user["UserName"],
                 "severity":"HIGH",
                 "finding":f"Access key- {access_key_id} not used for over 90 days",
@@ -118,6 +125,7 @@ def scan_iam_users():
                 finding = {
                         "rule_id": "CG-IAM-008",
                         "service": "IAM",
+                        'region':"Global",
                         "resource": user["UserName"],
                         "severity": "LOW",
                         "finding": f"Access key {access_key_id} has never been used.",
@@ -132,12 +140,14 @@ def scan_iam_users():
                 finding = {
                         "rule_id": "CG-IAM-009",
                         "service": "IAM",
+                        'region':"Global",
                         "resource": user["UserName"],
                         "severity": "HIGH",
                         "finding": f"Access key {access_key_id} is older than or equal to 180 days.",
                         "recommendation": "Rotate the access key."
                         }
                 iam_findings.append(finding)
+                
 
     if not iam_findings:
         print("No iam users found with vulnerability")

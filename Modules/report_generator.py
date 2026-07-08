@@ -77,6 +77,9 @@ def generate_report(findings):
                          vertical-align:top;
                          word-break:break-word;
                      }}
+                     td.region {{
+                         text-align:center;
+                     }}
                      </style>
                      </head>
                      <body>
@@ -98,6 +101,7 @@ def generate_report(findings):
                      <tr>
                         <th>Rule ID </th>
                         <th>Service </th>
+                        <th>Region</th>
                         <th>Resource </th>
                         <th>Severity</th>
                         <th>Finding </th>
@@ -125,6 +129,7 @@ def generate_report(findings):
                         <tr>
                          <td>{finding["rule_id"]}</td>
                          <td>{finding["service"]}</td>
+                         <td>{finding["region"]}</td>
                          <td>{finding["resource"]}</td>
                          <td style="color:{color};font-weight:bold;">{severity}</td>
                          <td>{finding["finding"]}</td>

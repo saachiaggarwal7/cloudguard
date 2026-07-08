@@ -3,9 +3,47 @@ from files.ec2_scanner import ec2_scanner
 from files.s3_scanner import s3_scanner
 from files.security_group_scanner import security_group_scanner
 from files.report_generator import generate_report
-
+import boto3
 
 findings=[]
+
+def create_session():
+    print("\nSelect Region")
+    print("1. Default Region")
+    print("2. Select Region")
+    print("3. Scan All Regions")
+    try:
+        choice=int(input("Enter choice:"))
+    except ValueError:
+        print("Please enter a valid number.")
+        return None
+
+    if choice==1:
+        return [boto3.Session()]
+    elif choice==2:
+        input_region=input("Enter AWS region:").strip()
+        ec2_client=boto3.client("ec2")
+        regions=ec2_client.describe_regions()['Regions']
+        for region in regions:
+            if input_region == region['RegionName']:
+                try:
+                    return [boto3.Session(region_name=input_region)]
+                except Exception:
+                    print("Invalid region.")
+                    return None
+        print("Region not available.")
+        return None
+    elif choice==3:
+        sessions=[]
+        ec2_client=boto3.client("ec2")
+        regions=ec2_client.describe_regions()["Regions"]
+        for region in regions:
+                sessions.append(boto3.Session(region_name=region["RegionName"]))
+        return sessions
+    else:
+        print("Invalid choice.")
+        return None
+
 
 def display_finding(findings):
     if not findings:
@@ -28,26 +66,44 @@ while(True):
         continue
     if choice==1:
         findings=[]
-        findings.extend(scan_iam_users())
-        findings.extend(s3_scanner())
-        findings.extend(ec2_scanner())
-        findings.extend(security_group_scanner())
+        sessions=create_session()
+        if sessions is None:
+            continue
+        findings.extend(scan_iam_users(sessions[0]))
+        findings.extend(s3_scanner(sessions[0]))
+        for session in sessions:
+            findings.extend(ec2_scanner(session))
+            findings.extend(security_group_scanner(session))
         display_finding(findings)
     elif choice==2:
         findings=[]
-        findings.extend(scan_iam_users())
+        sessions=create_session()
+        if sessions is None:
+            continue
+        findings.extend(scan_iam_users(sessions[0]))
         display_finding(findings)
     elif choice==3:
         findings=[]
-        findings.extend(s3_scanner())
+        sessions=create_session()
+        if sessions is None:
+            continue
+        findings.extend(s3_scanner(sessions[0]))
         display_finding(findings)
     elif choice==4:
         findings=[]
-        findings.extend(ec2_scanner())
+        sessions=create_session()
+        if sessions is None:
+            continue
+        for session in sessions:
+            findings.extend(ec2_scanner(session))
         display_finding(findings)
     elif choice==5:
         findings=[]
-        findings.extend(security_group_scanner())
+        sessions=create_session()
+        if sessions is None:
+            continue
+        for session in sessions:
+            findings.extend(security_group_scanner(session))
         display_finding(findings)
     elif choice==6:
         if findings:

@@ -1,8 +1,9 @@
 import boto3
 
-def ec2_scanner():
+def ec2_scanner(session):
+    region=session.region_name or "Global"
     ec2_findings=[]
-    ec2_client=boto3.client('ec2')
+    ec2_client=session.client("ec2")
     response=ec2_client.describe_instances()
     for reservation in response['Reservations']:
         for instance in reservation["Instances"]:
@@ -19,6 +20,7 @@ def ec2_scanner():
                 finding={
                             "rule_id": "CG-EC2-001",
                             "service": "EC2",
+                            'region':region,
                             "resource": instance_name,
                             "severity": "HIGH",
                             "finding": f"Instance has a public IP address ({instance.get('PublicIpAddress')}).",
@@ -33,6 +35,7 @@ def ec2_scanner():
                 finding={
                             "rule_id": "CG-EC2-002",
                             "service": "EC2",
+                            'region':region,
                             "resource": instance_name,
                             "severity": "HIGH",
                             "finding": "IMDSv2 is not enforced. Instance allows IMDSv1 requests.",
@@ -46,6 +49,7 @@ def ec2_scanner():
                 finding={
                             "rule_id": "CG-EC2-003",
                             "service": "EC2",
+                            'region':region,
                             "resource": instance_name,
                             "severity": "LOW",
                             "finding": "Detailed CloudWatch monitoring is disabled.",
@@ -67,6 +71,7 @@ def ec2_scanner():
                         finding={
                             "rule_id": "CG-EC2-004",
                             "service": "EC2",
+                            'region':region,
                             "resource": instance_name,
                             "severity": "HIGH",
                             "finding": "EBS volume is not encrypted",

@@ -1,8 +1,9 @@
 import boto3
 
-def security_group_scanner():
+def security_group_scanner(session):
     sg_findings=[]
-    ec2_client=boto3.client('ec2')
+    region=session.region_name or "Global"
+    ec2_client=session.client('ec2')
     response=ec2_client.describe_security_groups()
     security_groups=response.get('SecurityGroups')
     for security_group in security_groups:
@@ -20,6 +21,7 @@ def security_group_scanner():
                             finding={
                                     "rule_id": "CG-SG-001",
                                     "service": "Security Group",
+                                    'region':region,
                                     "resource": f"{group_name} ({group_id})",
                                     "severity": "HIGH",
                                     "finding": "SSH (22) is open to the Internet.",
@@ -34,6 +36,7 @@ def security_group_scanner():
                             finding={
                                     "rule_id": "CG-SG-002",
                                     "service": "Security Group",
+                                    'region':region,
                                     "resource": f"{group_name} ({group_id})",
                                     "severity": "HIGH",
                                     "finding": "RDP (3389) is open to the Internet.",
@@ -49,6 +52,7 @@ def security_group_scanner():
                             finding={
                                 "rule_id": "CG-SG-003",
                                 "service": "Security Group",
+                                'region':region,
                                 "resource": f"{group_name} ({group_id})",
                                 "severity": "CRITICAL",
                                 "finding": "All inbound traffic is allowed from the Internet.",
@@ -72,6 +76,7 @@ def security_group_scanner():
             finding={
                         "rule_id": "CG-SG-004",
                         "service": "Security Group",
+                        'region':region,
                         "resource": f"{group_name} ({group_id})",
                         "severity": "LOW",
                         "finding": "Security Group is not attached to any network interface.",

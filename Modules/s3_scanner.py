@@ -1,14 +1,14 @@
 import boto3
 import json
 from botocore.exceptions import ClientError
-def s3_scanner():
+def s3_scanner(session):
     findings=[]
-    s3_client=boto3.client('s3')
+    s3_client=session.client('s3')
     buckets=s3_client.list_buckets()['Buckets']
     for bucket in buckets:
         bucket_name=bucket['Name']
 
-        #checking whether bhucket policy allows public access
+        #checking whether bucket policy allows public access
         try:
            policies_str=s3_client.get_bucket_policy(Bucket=bucket_name)['Policy']
            policies=json.loads(policies_str)
@@ -20,6 +20,7 @@ def s3_scanner():
                         finding={
                        "rule_id": "CG-S3-001",
                         "service": "S3",
+                        'region':"Global",
                         "resource":bucket_name,
                         "severity": "HIGH",
                         "finding": "Bucket policy allows public access.",
@@ -32,6 +33,7 @@ def s3_scanner():
                                 finding={
                                 "rule_id": "CG-S3-001",
                                 "service": "S3",
+                                'region':"Global",
                                 "resource":bucket_name,
                                 "severity": "HIGH",
                                 "finding": "Bucket policy allows public access.",
@@ -51,6 +53,7 @@ def s3_scanner():
                 finding={
                     "rule_id": "CG-S3-002",
                     "service": "S3",
+                    'region':"Global",
                     "resource":bucket_name,
                     "severity": "HIGH",
                     "finding": "One or more Block Public Access settings are disabled.",
@@ -68,6 +71,7 @@ def s3_scanner():
             finding= {
             "rule_id": "CG-S3-003",
             "service": "S3",
+            'region':"Global",
             "resource": bucket_name,
             "severity": "MEDIUM",
             "finding": "Bucket versioning is disabled.",
@@ -81,6 +85,7 @@ def s3_scanner():
             finding={
             "rule_id": "CG-S3-004",
             "service": "S3",
+            'region':"Global",
             "resource": bucket_name,
             "severity": "LOW",
             "finding":"Bucket access logging is disabled.",
@@ -97,6 +102,7 @@ def s3_scanner():
                 finding={
                     "rule_id": "CG-S3-005",
                     "service": "S3",
+                    'region':"Global",
                     "resource": bucket_name,
                     "severity": "LOW",
                     "finding":"Bucket has no tags",
