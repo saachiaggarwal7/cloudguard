@@ -1,8 +1,9 @@
-from files.iam_auditor import scan_iam_users
-from files.ec2_scanner import ec2_scanner
-from files.s3_scanner import s3_scanner
-from files.security_group_scanner import security_group_scanner
-from files.report_generator import generate_report
+from Modules.iam_auditor import scan_iam_users
+from Modules.ec2_scanner import ec2_scanner
+from Modules.s3_scanner import s3_scanner
+from Modules.security_group_scanner import security_group_scanner
+from Modules.report_generator import generate_report
+from Modules.vpc_scanner import vpc_scanner
 import boto3
 
 findings=[]
@@ -58,7 +59,7 @@ while(True):
     print("="*60)
     print(" "*20+"CLOUD GUARD")
     print("="*60)
-    print("\n1. Scan Everything \n2. Scan IAM \n3. Scan S3 \n4. Scan EC2 \n5. Scan Security Groups \n6. Generate Report \n7. Exit")
+    print("\n1. Scan Everything \n2. Scan IAM \n3. Scan S3 \n4. Scan EC2 \n5. Scan Security Groups \n6. VPC Scanner \n7. Generate Report \n8. Exit")
     try:
         choice=int(input("Enter choice:"))
     except ValueError:
@@ -106,16 +107,25 @@ while(True):
             findings.extend(security_group_scanner(session))
         display_finding(findings)
     elif choice==6:
+        findings=[]
+        sessions=create_session()
+        if sessions is None:
+            continue
+        for session in sessions:
+            findings.extend(vpc_scanner(session))
+        display_finding(findings)
+
+    elif choice==7:
         if findings:
             generate_report(findings)
             print("Report generated successfully!")
         else:
             print("No scan results available. Please run a scan first.")
-    elif choice==7:
+    elif choice==8:
         print("Thank you for using CloudGuard!")
         break
     else:
-        print("Please enter a number between 1 and 7.")
+        print("Please enter a number between 1 and 8.")
 
 
 
