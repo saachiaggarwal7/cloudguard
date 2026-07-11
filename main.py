@@ -7,14 +7,35 @@ from Modules.vpc_scanner import vpc_scanner
 from Modules.cloudtrail_scanner import cloudtrail_scanner
 
 from Remediation.s3_remediation import (remediate_block_public_access,remediate_versioning)
-
-
+from Remediation.ec2_remediation import (remediate_imdsv2,remediate_detailed_monitoring)
+from Remediation.iam_remediation import (delete_access_key)
 import boto3
 
 remediation_map={
+    "CG-IAM-007":delete_access_key,
+    "CG-IAM-008":delete_access_key,
     "CG-S3-002":remediate_block_public_access,
-    "CG-S3-003":remediate_versioning
+    "CG-S3-003":remediate_versioning,
+    "CG-EC2-002":remediate_imdsv2,
+    "CG-EC2-003":remediate_detailed_monitoring
 }
+
+manual_remediation={
+    "CG-IAM-001": "Root MFA must be configured manually by an administrator. AWS does not support automatic MFA enrollment.",
+    "CG-IAM-002": "User MFA requires the user to register and verify an MFA device manually.",
+    "CG-IAM-003": "Removing AdministratorAccess may disrupt applications or administrative workflows. Review permissions manually.",
+    "CG-IAM-004": "AdministratorAccess inherited through IAM Groups should be reviewed manually before modifying group permissions.",
+    "CG-IAM-005": "Inline IAM policies require manual review to determine whether the permissions are necessary.",
+    "CG-IAM-006": "Inline Group policies require manual review before removal or modification.",
+    "CG-IAM-009": "Access key rotation is a multi-step process (create a new key, update applications, test, then remove the old key). Automatic rotation is not supported.",
+    "CG-S3-001": "Bucket policies require manual review because removing them may break applications or public websites.",
+    "CG-S3-004": "Bucket logging requires a destination logging bucket, so manual configuration is required.",
+    "CG-S3-005": "Bucket tags depend on your organization's tagging strategy and must be added manually.",
+    "CG-EC2-001": "Removing a public IP may interrupt SSH, web applications, or APIs. Review the network architecture before making changes.",
+    "CG-EC2-004": "Encrypting an existing EBS volume requires creating an encrypted copy and replacing the volume. This cannot be safely automated."
+
+}
+
 scanner_map={
     "IAM":scan_iam_users,
     "EC2":ec2_scanner,
@@ -23,13 +44,6 @@ scanner_map={
     "VPC":vpc_scanner,
     "CT":cloudtrail_scanner
 }
-
-manual_remediation={
-    "CG-S3-001": "Bucket policies require manual review because removing them may break applications or public websites.",
-    "CG-S3-004": "Bucket logging requires a destination logging bucket, so manual configuration is required.",
-    "CG-S3-005": "Bucket tags depend on your organization's tagging strategy and must be added manually."
-}
-
 
 def create_session():
     print("\nSelect Region")
@@ -123,6 +137,15 @@ def next_action_menu(findings):
         else:
             print("Invalid choice.")
 
+def get_resource_identifier(selected):
+    if selected["service"]=="EC2":
+        return [selected["instance_id"]]
+    if selected["service"]=="S3":
+        return [selected["resource"]]
+    if selected["service"]=="IAM":
+       return [selected["resource"],selected["access_key"]]
+     
+
 def remediation_menu(findings):
     while True:
         print("="*60)
@@ -166,7 +189,8 @@ def remediation_menu(findings):
         else:
             session=boto3.Session(region_name=region)
         function=remediation_map[selected["rule_id"]]
-        success=function(session,selected["resource"])
+        args=get_resource_identifier(selected)
+        success=function(session,*args)
         if success:
             print("\n✓ Remediation completed successfully.")
             findings.remove(selected)
