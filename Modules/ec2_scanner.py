@@ -22,6 +22,7 @@ def ec2_scanner(session):
                             "service": "EC2",
                             'region':region,
                             "resource": instance_name,
+                            "instance_id": instance["InstanceId"],
                             "severity": "HIGH",
                             "finding": f"Instance has a public IP address ({instance.get('PublicIpAddress')}).",
                             "recommendation": "Remove the public IP or place the instance in a private subnet unless Internet access is required."
@@ -37,6 +38,7 @@ def ec2_scanner(session):
                             "service": "EC2",
                             'region':region,
                             "resource": instance_name,
+                            "instance_id": instance["InstanceId"],
                             "severity": "HIGH",
                             "finding": "IMDSv2 is not enforced. Instance allows IMDSv1 requests.",
                             "recommendation":"Require IMDSv2 by setting HttpTokens to 'required'."
@@ -51,6 +53,7 @@ def ec2_scanner(session):
                             "service": "EC2",
                             'region':region,
                             "resource": instance_name,
+                            "instance_id": instance["InstanceId"],
                             "severity": "LOW",
                             "finding": "Detailed CloudWatch monitoring is disabled.",
                             "recommendation":"Enable detailed monitoring for better visibility and faster detection of operational or security issues."
@@ -73,6 +76,7 @@ def ec2_scanner(session):
                             "service": "EC2",
                             'region':region,
                             "resource": instance_name,
+                            "instance_id": instance["InstanceId"],
                             "severity": "HIGH",
                             "finding": "EBS volume is not encrypted",
                             "recommendation":"Create an encrypted copy of the volume or use encrypted EBS volumes for sensitive data."
