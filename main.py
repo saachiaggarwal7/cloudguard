@@ -6,9 +6,30 @@ from Modules.report_generator import generate_report
 from Modules.vpc_scanner import vpc_scanner
 from Modules.cloudtrail_scanner import cloudtrail_scanner
 
+from Remediation.s3_remediation import (remediate_block_public_access,remediate_versioning)
+
+
 import boto3
 
-findings=[]
+remediation_map={
+    "CG-S3-002":remediate_block_public_access,
+    "CG-S3-003":remediate_versioning
+}
+scanner_map={
+    "IAM":scan_iam_users,
+    "EC2":ec2_scanner,
+    "S3":s3_scanner,
+    "SG":security_group_scanner,
+    "VPC":vpc_scanner,
+    "CT":cloudtrail_scanner
+}
+
+manual_remediation={
+    "CG-S3-001": "Bucket policies require manual review because removing them may break applications or public websites.",
+    "CG-S3-004": "Bucket logging requires a destination logging bucket, so manual configuration is required.",
+    "CG-S3-005": "Bucket tags depend on your organization's tagging strategy and must be added manually."
+}
+
 
 def create_session():
     print("\nSelect Region")
@@ -96,13 +117,89 @@ def next_action_menu(findings):
             generate_report(findings)
             print("Report generated successfully.")
         elif choice==2:
-            print("Remediation module coming soon.")
+            remediation_menu(findings)
         elif choice==3:
             break
         else:
             print("Invalid choice.")
 
+def remediation_menu(findings):
+    while True:
+        print("="*60)
+        print(" "*20+f"AVAILABLE REMEDIATION  ({len(findings)} Findings)")
+        print("="*60)
+        if not findings:
+            print("\nAll remediable findings have been addressed.")
+            break
+        num=1
+        for finding in findings:
+            if finding["rule_id"] in remediation_map:
+                print(f"{num}.\nRule ID   : {finding["rule_id"]}\nResource  : {finding["resource"]}\nIssue     : {finding["finding"]}\nStatus    : ⚡Automatic")
+            else:
+                print(f"{num}.\nRule ID   : {finding["rule_id"]}\nResource  : {finding["resource"]}\nIssue     : {finding["finding"]}\nStatus    : 🔧Manual")
+            num+=1
+        print("0. Back")
+        try:
+            choice=int(input("Enter choice: "))
+        except ValueError:
+            print("Please enter a valid number.")
+        if choice==0:
+            break
+        if choice<1 or choice>len(findings):
+            print("Invalid choice.")
+            continue
+        selected=findings[choice-1]
+        if selected["rule_id"] in manual_remediation:
+            print("\nAutomatic remediation is not available.\n")
+            print("Reason:")
+            print(manual_remediation[selected["rule_id"]])
+            continue
+        print("\nYou are about to remediate:")
+        print(f"Rule ID : {selected['rule_id']}")
+        print(f"Resource: {selected['resource']}")
+        confirm = input("Proceed? (Y/N): ").strip().upper()
+        if confirm != "Y":
+            continue
+        region=selected["region"]
+        if region=="Global":
+            session=boto3.Session()
+        else:
+            session=boto3.Session(region_name=region)
+        function=remediation_map[selected["rule_id"]]
+        success=function(session,selected["resource"])
+        if success:
+            print("\n✓ Remediation completed successfully.")
+            findings.remove(selected)
+        else:
+            print("\n✗ Remediation failed.")
     
+
+
+def show_result(findings):
+        display_finding(findings)
+        display_summary(findings)
+        if findings:
+            next_action_menu(findings)     
+
+
+def run_region_scanner(scanner):
+    findings=[]
+    sessions=create_session()
+    if sessions is None:
+        return
+    for session in sessions:
+        findings.extend(scanner(session))
+    print("\nScanning completed successfully.\n")
+    show_result(findings)  
+
+def run_global_scanner(scanner):
+    findings=[]
+    sessions=create_session()
+    if sessions is None:
+        return
+    findings.extend(scanner(sessions[0]))
+    show_result(findings)
+
 
 
 while(True):
@@ -125,80 +222,25 @@ while(True):
         for session in sessions:
             findings.extend(ec2_scanner(session))
             findings.extend(security_group_scanner(session))
-        display_finding(findings)
-        display_summary(findings)
-        if findings:
-            next_action_menu(findings)
+            findings.extend(vpc_scanner(session))
+            findings.extend(cloudtrail_scanner(session))
+        show_result(findings)
 
     elif choice==2:
-        findings=[]
-        sessions=create_session()
-        if sessions is None:
-            continue
-        findings.extend(scan_iam_users(sessions[0]))
-        display_finding(findings)
-        display_summary(findings)
-        if findings:
-            next_action_menu(findings)
-
+        run_global_scanner(scan_iam_users)
     elif choice==3:
-        findings=[]
-        sessions=create_session()
-        if sessions is None:
-            continue
-        findings.extend(s3_scanner(sessions[0]))
-        display_finding(findings)
-        display_summary(findings)
-        if findings:
-            next_action_menu(findings)
+        run_global_scanner(s3_scanner)
 
     elif choice==4:
-        findings=[]
-        sessions=create_session()
-        if sessions is None:
-            continue
-        for session in sessions:
-            findings.extend(ec2_scanner(session))
-        display_finding(findings)
-        display_summary(findings)
-        if findings:
-            next_action_menu(findings)
-
+        run_region_scanner(ec2_scanner)
     elif choice==5:
-        findings=[]
-        sessions=create_session()
-        if sessions is None:
-            continue
-        for session in sessions:
-            findings.extend(security_group_scanner(session))
-        display_finding(findings)
-        display_summary(findings)
-        if findings:
-            next_action_menu(findings)
+        run_region_scanner(security_group_scanner)
 
     elif choice==6:
-        findings=[]
-        sessions=create_session()
-        if sessions is None:
-            continue
-        for session in sessions:
-            findings.extend(vpc_scanner(session))
-        display_finding(findings)
-        display_summary(findings)
-        if findings:
-            next_action_menu(findings)
+        run_region_scanner(vpc_scanner)
 
     elif choice==7:
-        findings=[]
-        sessions=create_session()
-        if sessions is None:
-            continue
-        for session in sessions:
-            findings.extend(cloudtrail_scanner(session))
-        display_finding(findings)
-        display_summary(findings)
-        if findings:
-            next_action_menu(findings)
+        run_region_scanner(cloudtrail_scanner)
 
     elif choice==8:
         print("Thank you for using CloudGuard!")
