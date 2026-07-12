@@ -9,6 +9,8 @@ from Modules.cloudtrail_scanner import cloudtrail_scanner
 from Remediation.s3_remediation import (remediate_block_public_access,remediate_versioning)
 from Remediation.ec2_remediation import (remediate_imdsv2,remediate_detailed_monitoring)
 from Remediation.iam_remediation import (delete_access_key)
+from Remediation.sg_remediation import delete_security_group
+from Remediation.cloudtrail_remediation import remediate_multi_region
 import boto3
 
 remediation_map={
@@ -17,7 +19,9 @@ remediation_map={
     "CG-S3-002":remediate_block_public_access,
     "CG-S3-003":remediate_versioning,
     "CG-EC2-002":remediate_imdsv2,
-    "CG-EC2-003":remediate_detailed_monitoring
+    "CG-EC2-003":remediate_detailed_monitoring,
+    "CG-SG-004":delete_security_group,
+    "CG-CT-002": remediate_multi_region,
 }
 
 manual_remediation={
@@ -32,8 +36,10 @@ manual_remediation={
     "CG-S3-004": "Bucket logging requires a destination logging bucket, so manual configuration is required.",
     "CG-S3-005": "Bucket tags depend on your organization's tagging strategy and must be added manually.",
     "CG-EC2-001": "Removing a public IP may interrupt SSH, web applications, or APIs. Review the network architecture before making changes.",
-    "CG-EC2-004": "Encrypting an existing EBS volume requires creating an encrypted copy and replacing the volume. This cannot be safely automated."
-
+    "CG-EC2-004": "Encrypting an existing EBS volume requires creating an encrypted copy and replacing the volume. This cannot be safely automated.",
+    "CG-SG-001":"Restrict SSH to your trusted public IP",
+    "CG-SG-002":"Restrict RDP to trusted administrator IPs or use a VPN.",
+    "CG-SG-003":"Replace the 'All Traffic' rule with only the required ports and trusted CIDR ranges."
 }
 
 scanner_map={
@@ -144,7 +150,9 @@ def get_resource_identifier(selected):
         return [selected["resource"]]
     if selected["service"]=="IAM":
        return [selected["resource"],selected["access_key"]]
-     
+    if selected["service"]=="Security Group":
+        return [selected["group_id"]]
+
 
 def remediation_menu(findings):
     while True:

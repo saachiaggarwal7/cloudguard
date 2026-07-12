@@ -114,6 +114,7 @@ def scan_iam_users(session):
                 "service":"IAM",
                 'region':"Global",
                 'resource':user["UserName"],
+                "access_key": access_key_id,
                 "severity":"HIGH",
                 "finding":f"Access key- {access_key_id} not used for over 90 days",
                 "recommendation":"Rotate or delete unused access keys according to your organization's key rotation policy."
@@ -127,6 +128,7 @@ def scan_iam_users(session):
                         "service": "IAM",
                         'region':"Global",
                         "resource": user["UserName"],
+                        "access_key": access_key_id,
                         "severity": "LOW",
                         "finding": f"Access key {access_key_id} has never been used.",
                         "recommendation": "Delete unused access keys if they are no longer required."
@@ -142,6 +144,7 @@ def scan_iam_users(session):
                         "service": "IAM",
                         'region':"Global",
                         "resource": user["UserName"],
+                        "access_key": access_key_id,
                         "severity": "HIGH",
                         "finding": f"Access key {access_key_id} is older than or equal to 180 days.",
                         "recommendation": "Rotate the access key."
