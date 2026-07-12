@@ -78,6 +78,7 @@ def security_group_scanner(session):
                         "service": "Security Group",
                         'region':region,
                         "resource": f"{group_name} ({group_id})",
+                        "group_id": group_id,
                         "severity": "LOW",
                         "finding": "Security Group is not attached to any network interface.",
                         "recommendation": "Delete unused security groups or attach them only if they are required."
