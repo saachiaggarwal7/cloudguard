@@ -10,7 +10,8 @@ from Remediation.s3_remediation import (remediate_block_public_access,remediate_
 from Remediation.ec2_remediation import (remediate_imdsv2,remediate_detailed_monitoring)
 from Remediation.iam_remediation import (delete_access_key)
 from Remediation.sg_remediation import delete_security_group
-from Remediation.cloudtrail_remediation import remediate_multi_region
+from Remediation.cloudtrail_remediation import (remediate_multi_region,remediate_log_file_validation)
+from Remediation.vpc_remediation import remediate_flow_logs
 import boto3
 
 remediation_map={
@@ -22,6 +23,8 @@ remediation_map={
     "CG-EC2-003":remediate_detailed_monitoring,
     "CG-SG-004":delete_security_group,
     "CG-CT-002": remediate_multi_region,
+    "CG-CT-003":remediate_log_file_validation,
+    "CG-VPC-002": remediate_flow_logs
 }
 
 manual_remediation={
@@ -39,7 +42,13 @@ manual_remediation={
     "CG-EC2-004": "Encrypting an existing EBS volume requires creating an encrypted copy and replacing the volume. This cannot be safely automated.",
     "CG-SG-001":"Restrict SSH to your trusted public IP",
     "CG-SG-002":"Restrict RDP to trusted administrator IPs or use a VPN.",
-    "CG-SG-003":"Replace the 'All Traffic' rule with only the required ports and trusted CIDR ranges."
+    "CG-SG-003":"Replace the 'All Traffic' rule with only the required ports and trusted CIDR ranges.",
+    "CG-CT-001": "Creating a CloudTrail requires choosing log storage, encryption, and event settings. Configure it manually.",
+    "CG-CT-004": "CloudWatch Logs integration requires selecting or creating a Log Group and IAM role. Configure it manually.",
+    "CG-CT-005": "Customer-managed KMS encryption requires selecting or creating an AWS KMS key and updating the trail configuration manually.",
+    "CG-VPC-001": "The default VPC may contain existing resources or be required by AWS services. Review dependencies before deleting it.",
+    "CG-VPC-003": "Enabling DNS Hostnames may affect applications and networking behavior. Review your VPC configuration before enabling it.",
+    "CG-VPC-004": "DNS Resolution is a core VPC networking feature. Review the impact on existing workloads before enabling it.",
 }
 
 scanner_map={
@@ -96,7 +105,7 @@ def display_finding(findings):
     for finding in findings:
             print("="*60)
             for key,value in finding.items():
-                print(f"{key} : {value}")
+                print(f"{key:<15} : {value:<15}")
 
 def display_summary(findings):
     severity_count={
@@ -152,6 +161,10 @@ def get_resource_identifier(selected):
        return [selected["resource"],selected["access_key"]]
     if selected["service"]=="Security Group":
         return [selected["group_id"]]
+    if selected["service"]=="CloudTrail":
+        return [selected["trail_name"]]
+    if selected["service"]=="VPC":
+        return [selected["vpc_id"]]
 
 
 def remediation_menu(findings):
@@ -160,7 +173,7 @@ def remediation_menu(findings):
         print(" "*20+f"AVAILABLE REMEDIATION  ({len(findings)} Findings)")
         print("="*60)
         if not findings:
-            print("\nAll remediable findings have been addressed.")
+            print("\nNo automatic remediations remain.")
             break
         num=1
         for finding in findings:
@@ -174,6 +187,7 @@ def remediation_menu(findings):
             choice=int(input("Enter choice: "))
         except ValueError:
             print("Please enter a valid number.")
+            continue
         if choice==0:
             break
         if choice<1 or choice>len(findings):

@@ -29,6 +29,7 @@ def cloudtrail_scanner(session):
                     "service": "CloudTrail",
                     "region": region,
                     "resource": trail["Name"],
+                    "trail_name": trail["Name"],
                     "severity": "MEDIUM",
                     "finding": "CloudTrail is not configured as a multi-region trail.",
                     "recommendation": "Enable multi-region logging to capture API activity across all AWS regions."
@@ -42,6 +43,7 @@ def cloudtrail_scanner(session):
                     "service": "CloudTrail",
                     "region": region,
                     "resource": trail["Name"],
+                    "trail_name": trail["Name"],
                     "severity": "MEDIUM",
                     "finding": "CloudTrail log file validation is disabled.",
                     "recommendation": "Enable log file validation to detect unauthorized modification of CloudTrail logs."
@@ -55,6 +57,7 @@ def cloudtrail_scanner(session):
                     "service": "CloudTrail",
                     "region": region,
                     "resource": trail["Name"],
+                    "trail_name": trail["Name"],
                     "severity": "MEDIUM",
                     "finding": "CloudTrail is not integrated with CloudWatch Logs.",
                     "recommendation": "Integrate CloudTrail with CloudWatch Logs to enable real-time monitoring, alerting, and log analysis."
