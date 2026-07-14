@@ -33,6 +33,7 @@ def vpc_scanner(session):
                 "service":"VPC",
                 'region':region,
                 'resource':resource,
+                "vpc_id":vpc["VpcId"],
                 "severity":"MEDIUM",
                 "finding":"VPC Flow Logs are disabled.",
                 "recommendation":"Enable VPC Flow Logs and send them to CloudWatch Logs or Amazon S3 for monitoring and incident investigation."
